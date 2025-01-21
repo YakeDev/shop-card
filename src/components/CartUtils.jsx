@@ -3,6 +3,11 @@ import localForage from 'localforage'
 // Ajouter un produit au panier avec gestion de la quantité et du prix total
 export const addToCart = async (product, quantity) => {
 	try {
+		// Validation des données
+		if (!product || !product.id || !product.price || quantity <= 0) {
+			throw new Error('Produit ou quantité invalide.')
+		}
+
 		const existingCart = (await localForage.getItem('cart')) || []
 
 		// Vérifier si le produit est déjà dans le panier
@@ -11,7 +16,12 @@ export const addToCart = async (product, quantity) => {
 		)
 
 		if (productIndex >= 0) {
-			console.log('Produit déjà dans le panier, quantité non modifiée.')
+			// Mettre à jour la quantité et le prix total
+			existingCart[productIndex].quantity += quantity
+			existingCart[productIndex].totalPrice =
+				existingCart[productIndex].quantity * product.price
+			await localForage.setItem('cart', existingCart)
+			await updateCartTotal(existingCart)
 			return
 		}
 
@@ -28,8 +38,6 @@ export const addToCart = async (product, quantity) => {
 		// Mettre à jour localForage et recalculer le total
 		await localForage.setItem('cart', updatedCart)
 		await updateCartTotal(updatedCart)
-
-		// console.log('Produit ajouté au panier avec succès!')
 	} catch (err) {
 		console.error('Erreur lors de l’ajout au panier :', err)
 	}
@@ -38,8 +46,7 @@ export const addToCart = async (product, quantity) => {
 // Obtenir le panier complet
 export const getCart = async () => {
 	try {
-		const cart = (await localForage.getItem('cart')) || []
-		return cart
+		return (await localForage.getItem('cart')) || []
 	} catch (err) {
 		console.error('Erreur lors de la récupération du panier :', err)
 		return []
@@ -51,6 +58,12 @@ export const removeItem = async (productId, setCart, setCartQuantity) => {
 	try {
 		const existingCart = (await localForage.getItem('cart')) || []
 
+		// Vérifier si le produit existe dans le panier
+		if (!existingCart.some((item) => item.id === productId)) {
+			console.log('Aucun produit trouvé avec cet ID.')
+			return
+		}
+
 		// Filtrer les produits pour supprimer celui avec l'ID donné
 		const updatedCart = existingCart.filter((item) => item.id !== productId)
 
@@ -58,14 +71,12 @@ export const removeItem = async (productId, setCart, setCartQuantity) => {
 		await localForage.setItem('cart', updatedCart)
 		await updateCartTotal(updatedCart)
 
-		// Mettre à jour l'état local
-		setCart(updatedCart)
-
-		// Mettre à jour la quantité globale
-		const newCartQuantity = await getCartQuantity()
-		setCartQuantity(newCartQuantity)
-
-		console.log('Produit supprimé du panier avec succès')
+		// Mettre à jour l'état local si les fonctions sont fournies
+		if (typeof setCart === 'function') setCart(updatedCart)
+		if (typeof setCartQuantity === 'function') {
+			const newCartQuantity = await getCartQuantity()
+			setCartQuantity(newCartQuantity)
+		}
 	} catch (err) {
 		console.error('Erreur lors de la suppression du produit :', err)
 	}
@@ -74,14 +85,13 @@ export const removeItem = async (productId, setCart, setCartQuantity) => {
 // Vider le panier
 export const clearCart = async (setCart, setCartQuantity) => {
 	try {
-		// Supprimer toutes les données
-		await localForage.clear()
+		// Réinitialiser les clés liées au panier
+		await localForage.setItem('cart', [])
+		await localForage.setItem('cartTotal', '0.00')
 
-		// Réinitialiser l'état local
-		setCart([])
-		setCartQuantity(0)
-
-		// console.log('Panier vidé avec succès.')
+		// Réinitialiser l'état local si les fonctions sont fournies
+		if (typeof setCart === 'function') setCart([])
+		if (typeof setCartQuantity === 'function') setCartQuantity(0)
 	} catch (err) {
 		console.error('Erreur lors du vidage du panier :', err)
 	}
@@ -99,7 +109,7 @@ export const getCartQuantity = async () => {
 }
 
 // Fonction pour mettre à jour le prix total du panier
-const updateCartTotal = async (cart) => {
+export const updateCartTotal = async (cart) => {
 	try {
 		const cartTotal = cart.reduce((total, item) => total + item.totalPrice, 0)
 		await localForage.setItem('cartTotal', cartTotal.toFixed(2))

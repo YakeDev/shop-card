@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { addToCart } from './CartUtils'
+
+import { useCart } from './CartContext'
 import { ShoppingCart } from 'lucide-react'
 
 export default function Shop() {
+	const { addToCart } = useCart() // Utilisez le contexte ici pour ajouter au panier
 	const [products, setProducts] = useState([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState(null)
@@ -39,7 +41,7 @@ export default function Shop() {
 
 	// Manage addition to basket with quantity equal to 1
 	const handleAddToCart = (product) => {
-		console.log('Ajouté au panier :', product)
+		// console.log('Ajouté au panier :', product)
 		const quantity = 1
 		addToCart(product, quantity)
 	}

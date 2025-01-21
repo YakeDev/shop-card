@@ -1,13 +1,16 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
+import { CartProvider } from './CartContext' // Assurez-vous d'importer le contexte ici
 
 export default function Root() {
 	return (
-		<div>
-			<Navbar />
-			<div id='detail' className='px-12 mt-30'>
-				<Outlet />
+		<CartProvider>
+			<div>
+				<Navbar />
+				<div id='detail' className='px-12 mt-30'>
+					<Outlet />
+				</div>
 			</div>
-		</div>
+		</CartProvider>
 	)
 }

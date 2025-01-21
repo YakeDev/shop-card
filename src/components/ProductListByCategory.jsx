@@ -1,10 +1,11 @@
+import { useCart } from './CartContext'
 import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { addToCart } from './CartUtils'
 import { ShoppingCart } from 'lucide-react'
 
 export default function ProductListByCategory({ categoryName }) {
+	const { addToCart } = useCart() // Utilisez le contexte ici pour ajouter au panier
 	const [products, setProducts] = useState([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState(null)
@@ -41,9 +42,7 @@ export default function ProductListByCategory({ categoryName }) {
 	}
 
 	const handleAddToCart = (product) => {
-		// console.log('Ajouté au panier :', product)
-		const quantity = 1
-		addToCart(product, quantity)
+		addToCart(product, 1) // Utilisez le addToCart du contexte
 	}
 
 	return (
@@ -75,7 +74,6 @@ export default function ProductListByCategory({ categoryName }) {
 								<h3 className='font-medium text-gray-800 uppercase mb-2'>
 									{el.title}
 								</h3>
-								{/* <p className='text-sm text-gray-500'>{el.category}</p> */}
 								<p className='text-xl font-semibold text-gray-950 mb-2'>
 									${el.price}
 								</p>
@@ -91,7 +89,7 @@ export default function ProductListByCategory({ categoryName }) {
 								onClick={() => handleAddToCart(el)}>
 								<span className='me-2'>
 									<ShoppingCart />
-								</span>{' '}
+								</span>
 								Add to Cart
 							</button>
 						</div>

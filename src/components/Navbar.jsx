@@ -1,22 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShoppingCart, Menu, X } from 'lucide-react'
-import { getCartItemCount } from './CartUtils' // Remplacez par la nouvelle fonction
+import { useCart } from './CartContext'
 
 export default function Navbar() {
+	const { cartItems } = useCart() // Use context
+	// console.log(cartItems.length)
+
 	const [isMenuOpen, setIsMenuOpen] = useState(false)
-	const [cartItemCount, setCartItemCount] = useState(0)
-
-	// Fonction pour mettre à jour le nombre d'items uniques
-	const updateCartItemCount = async () => {
-		const itemCount = await getCartItemCount()
-		setCartItemCount(itemCount)
-	}
-
-	// Mettre à jour le nombre d'items uniques lors du chargement et lorsque le panier change
-	useEffect(() => {
-		updateCartItemCount()
-	}, [])
 
 	const toggleMenu = () => {
 		setIsMenuOpen((prev) => !prev)
@@ -32,7 +23,6 @@ export default function Navbar() {
 				</Link>
 			</div>
 
-			{/* Menu navigation */}
 			<ul className='hidden md:flex justify-center space-x-4 uppercase text-sm'>
 				<li>
 					<Link to={'/Shop'}>Shop</Link>
@@ -51,21 +41,18 @@ export default function Navbar() {
 				</li>
 			</ul>
 
-			{/* Cart and menu */}
 			<div className='flex items-center space-x-4'>
-				{/* Cart */}
 				<div className='cart-container relative'>
 					<Link to={`/My-cart`} aria-label='View Cart'>
 						<ShoppingCart size={30} />
-						{cartItemCount > 0 && (
+						{cartItems.length > 0 && (
 							<span className='bg-gray-950 text-white text-center rounded-full h-5 w-5 text-sm absolute -top-1 -right-2'>
-								{cartItemCount}
+								{cartItems.length}
 							</span>
 						)}
 					</Link>
 				</div>
 
-				{/* Burger menu */}
 				<div className='md:hidden'>
 					<button onClick={toggleMenu} className='text-xl'>
 						{isMenuOpen ? <X size={30} /> : <Menu size={30} />}
@@ -73,7 +60,6 @@ export default function Navbar() {
 				</div>
 			</div>
 
-			{/* Mobile menu */}
 			<ul
 				className={`flex flex-col space-y-4 md:hidden ${
 					isMenuOpen ? 'block' : 'hidden'

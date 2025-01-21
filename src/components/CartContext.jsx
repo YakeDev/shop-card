@@ -1,37 +1,84 @@
-import { createContext, useState, useEffect } from 'react'
-import localForage from 'localforage'
-import PropTypes from 'prop-types' // Importation de PropTypes
+import { createContext, useState, useEffect, useContext } from 'react'
+import PropTypes from 'prop-types'
+import {
+	addToCart as addToCartUtil,
+	removeItem,
+	clearCart,
+	getCart,
+	getCartQuantity,
+	getCartTotal,
+	getCartItemCount,
+} from './CartUtils' // Utilities use localForage
 
-// Créez un contexte pour le panier
-export const CartContext = createContext()
+export const CartContext = createContext({
+	cartItemCount: 0,
+	cartItems: [],
+})
+
+export const useCart = () => useContext(CartContext)
 
 export const CartProvider = ({ children }) => {
+	const [cartItems, setCartItems] = useState([])
+	const [cartQuantity, setCartQuantity] = useState(0)
+	const [cartTotal, setCartTotal] = useState(0)
 	const [cartItemCount, setCartItemCount] = useState(0)
 
-	// Fonction pour mettre à jour le nombre d'items dans le panier
-	const updateCartItemCount = async () => {
+	// Synchronize cart state with localForage
+	const updateCart = async () => {
 		try {
-			const cart = await localForage.getItem('cart')
-			setCartItemCount(cart ? cart.length : 0)
-		} catch (err) {
-			console.error('Erreur lors de la mise à jour du panier :', err)
-			setCartItemCount(0)
+			const items = await getCart()
+			const quantity = await getCartQuantity()
+			const total = await getCartTotal()
+			const itemCount = await getCartItemCount()
+
+			setCartItems(items)
+			setCartQuantity(quantity)
+			setCartTotal(total)
+			setCartItemCount(itemCount)
+		} catch (error) {
+			console.error('Failed to update cart:', error)
 		}
 	}
 
-	// Mettre à jour le panier au montage du composant
+	// Add an item to the cart
+	const addToCart = async (product, quantity) => {
+		await addToCartUtil(product, quantity)
+		await updateCart()
+	}
+
+	// Remove an item from the cart
+	const removeFromCart = async (productId) => {
+		await removeItem(productId)
+		await updateCart()
+	}
+
+	// Clear the cart
+	const clearCartItems = async () => {
+		await clearCart()
+		await updateCart()
+	}
+
+	// Initialize cart state on mount
 	useEffect(() => {
-		updateCartItemCount()
+		updateCart()
 	}, [])
 
 	return (
-		<CartContext.Provider value={{ cartItemCount, updateCartItemCount }}>
+		<CartContext.Provider
+			value={{
+				cartItems,
+				cartQuantity,
+				cartTotal,
+				cartItemCount,
+				addToCart,
+				removeFromCart,
+				clearCartItems,
+			}}>
 			{children}
 		</CartContext.Provider>
 	)
 }
 
-// Définir les PropTypes pour le CartProvider
 CartProvider.propTypes = {
-	children: PropTypes.node.isRequired, // Les enfants doivent être un élément React
+	children: PropTypes.node.isRequired,
 }
